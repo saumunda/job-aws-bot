@@ -10,7 +10,7 @@ import threading
 
 from config import *
 from telegram import send
-from worker import start_workers, last_run_time, last_job_found
+import worker
 from health_monitor import monitor
 
 
@@ -29,7 +29,7 @@ def heartbeat():
 
 def no_job_alert():
     while True:
-        idle = time.time() - last_job_found
+        idle = time.time() - worker.last_job_found
 
         if idle > NO_JOB_ALERT_INTERVAL:
             send("📭 No jobs available right now.")
@@ -40,11 +40,11 @@ def no_job_alert():
 
 def watchdog():
     while True:
-        idle = time.time() - last_run_time
+        idle = time.time() - worker.last_run_time
 
         if idle > BOT_TIMEOUT:
             send("🚨 Bot frozen → restarting workers")
-            start_workers()
+            worker.start_workers()
 
         time.sleep(15)
 
@@ -56,7 +56,7 @@ def watchdog():
 def start_enterprise_bot():
 
     # start workers
-    start_workers()
+    worker.start_workers()
 
     # start health monitor
     threading.Thread(
