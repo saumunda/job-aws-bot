@@ -1,3 +1,9 @@
+"""
+bot_manager.py
+EC2 Bot Manager Service
+(Restructured — logic unchanged)
+"""
+
 import time
 import datetime
 import threading
@@ -6,7 +12,11 @@ from config import *
 from telegram import send
 from worker import start_workers, last_run_time, last_job_found
 from health_monitor import monitor
-threading.Thread(target=monitor, daemon=True).start()
+
+
+# =====================================================
+# SERVICES
+# =====================================================
 
 def heartbeat():
     while True:
@@ -39,9 +49,55 @@ def watchdog():
         time.sleep(15)
 
 
+# =====================================================
+# BOT STARTUP
+# =====================================================
+
 def start_enterprise_bot():
+
+    # start workers
     start_workers()
 
-    threading.Thread(target=heartbeat, daemon=True).start()
-    threading.Thread(target=no_job_alert, daemon=True).start()
-    threading.Thread(target=watchdog, daemon=True).start()
+    # start health monitor
+    threading.Thread(
+        target=monitor,
+        daemon=True,
+        name="HealthMonitor"
+    ).start()
+
+    # start heartbeat service
+    threading.Thread(
+        target=heartbeat,
+        daemon=True,
+        name="Heartbeat"
+    ).start()
+
+    # start no-job alert service
+    threading.Thread(
+        target=no_job_alert,
+        daemon=True,
+        name="NoJobAlert"
+    ).start()
+
+    # start watchdog
+    threading.Thread(
+        target=watchdog,
+        daemon=True,
+        name="Watchdog"
+    ).start()
+
+
+# =====================================================
+# EC2 ENTRYPOINT
+# =====================================================
+
+def main():
+    start_enterprise_bot()
+
+    # keep service alive (systemd requirement)
+    while True:
+        time.sleep(3600)
+
+
+if __name__ == "__main__":
+    main()
