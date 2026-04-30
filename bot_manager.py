@@ -10,7 +10,7 @@ import threading
 
 from config import *
 from telegram import send
-import worker
+import worker2 as worker
 from health_monitor import monitor
 
 
