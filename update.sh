@@ -9,4 +9,4 @@ git reset --hard origin/main
 source venv/bin/activate
 pip install -r requirements.txt
 
-sudo systemctl restart amazon-job-bot
+sudo systemctl restart amazonbot
