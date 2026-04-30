@@ -1,3 +1,4 @@
+  GNU nano 7.2                        update.sh
 #!/bin/bash
 set -e
 
@@ -11,6 +12,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 echo "Restarting service..."
-sudo systemctl restart job-aws-bot
+sudo systemctl restart amazonbot
 
 echo "Done."
