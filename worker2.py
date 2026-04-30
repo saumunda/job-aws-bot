@@ -117,15 +117,17 @@ def format_job(job):
     state = job.get("state", "")
     postal_code = job.get("postalCode", "")
     pay_rate = job.get("totalPayRateMax", "N/A")
+    location = ", ".join(part for part in [city, state, postal_code] if part)
 
     return (
-        f"*{job.get('jobTitle', 'Unknown')}*\n"
-        f"Location: {city}, {state}, {postal_code}\n"
-        f"Pay: GBP {pay_rate}/hr\n"
-        f"Job type: {job.get('jobType', '')}\n"
-        f"Employment: {job.get('employmentType', '')}\n"
-        "Apply: "
-        f"https://www.jobsatamazon.co.uk/app#/jobDetail?jobId={job_id}&locale=en-GB"
+        f"🚨 *NEW AMAZON JOB ALERT*\n\n"
+        f"💼 *{job.get('jobTitle', 'Unknown')}*\n"
+        f"📍 `Location:` {location or 'N/A'}\n"
+        f"💷 `Pay:` GBP {pay_rate}/hr\n"
+        f"🕒 `Job type:` {job.get('jobType', 'N/A')}\n"
+        f"📄 `Employment:` {job.get('employmentType', 'N/A')}\n"
+        "🔗 `Apply:` "
+        f"[Click here](https://www.jobsatamazon.co.uk/app#/jobDetail?jobId={job_id}&locale=en-GB)"
     )
 
 
