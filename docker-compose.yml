@@ -1,0 +1,10 @@
+services:
+  bot:
+    build: .
+    ports:
+      - "8000:8000"
+    restart: always
+
+  redis:
+    image: redis
+    restart: always
