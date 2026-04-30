@@ -7,11 +7,46 @@ EC2 Bot Manager Service
 import time
 import datetime
 import threading
+import os
+import tempfile
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 from config import *
 from telegram import send
 import worker2 as worker
 from health_monitor import monitor
+
+
+_startup_lock = threading.Lock()
+_started = False
+_process_lock_file = None
+
+
+def _acquire_process_lock():
+    """
+    Gunicorn starts one copy of this module per worker process. Keep exactly one
+    process responsible for the background bot so Telegram posts are not doubled.
+    """
+    global _process_lock_file
+
+    lock_path = os.path.join(tempfile.gettempdir(), "amazon-job-bot.lock")
+    lock_file = open(lock_path, "w")
+
+    try:
+        if os.name == "nt":
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        lock_file.close()
+        return False
+
+    _process_lock_file = lock_file
+    return True
 
 
 # =====================================================
@@ -54,6 +89,17 @@ def watchdog():
 # =====================================================
 
 def start_enterprise_bot():
+    global _started
+
+    with _startup_lock:
+        if _started:
+            return
+
+        if not _acquire_process_lock():
+            print("Bot already running in another process")
+            return
+
+        _started = True
 
     # start workers
     worker.start_workers()
