@@ -16,6 +16,7 @@ else:
     import fcntl
 
 from config import *
+from cache import clear_seen_jobs
 from telegram import send
 import worker2 as worker
 from health_monitor import monitor
@@ -55,6 +56,7 @@ def _acquire_process_lock():
 
 def heartbeat():
     while True:
+        clear_seen_jobs()
         send(
             f"✅ *BOT LIVE*\n"
             f"⏰ {datetime.datetime.now().strftime('%H:%M:%S')}"
@@ -116,13 +118,6 @@ def start_enterprise_bot():
         target=heartbeat,
         daemon=True,
         name="Heartbeat"
-    ).start()
-
-    # start no-job alert service
-    threading.Thread(
-        target=no_job_alert,
-        daemon=True,
-        name="NoJobAlert"
     ).start()
 
     # start watchdog

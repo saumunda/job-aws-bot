@@ -48,6 +48,12 @@ def save_job(job_id):
     else:
         _seen_jobs.add(job_id)
 
+def clear_seen_jobs():
+    if _redis_available():
+        r.delete("seen_jobs")
+    else:
+        _seen_jobs.clear()
+
 def save_heartbeat():
     global _heartbeat_expires_at
     if _redis_available():

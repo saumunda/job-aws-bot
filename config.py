@@ -13,7 +13,7 @@ PRIORITY_CITIES = [
     "Manchester"
 ]
 
-FAST_MIN = 3
+FAST_MIN = 5
 FAST_MAX = 5
 BACKOFF_MIN = 8
 BACKOFF_MAX = 12
