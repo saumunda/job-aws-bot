@@ -6,4 +6,4 @@ def monitor():
     while True:
         if not is_alive():
             send("🚨 BOT OFFLINE DETECTED")
-        time.sleep(30)
+        time.sleep(60)
