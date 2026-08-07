@@ -137,7 +137,7 @@ def main():
 
     # keep service alive (systemd requirement)
     while True:
-        time.sleep(3600)
+        time.sleep(7200)
 
 
 if __name__ == "__main__":
