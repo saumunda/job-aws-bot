@@ -10,14 +10,16 @@ PRIORITY_CITIES = [
     "Rotherham",
     "Chesterfield",
     "Leeds",
-    "Manchester"
+    "Manchester",
+    "Remote Location",
+    "London"
 ]
 
-FAST_MIN = 5
-FAST_MAX = 5
+FAST_MIN = 10
+FAST_MAX = 20
 BACKOFF_MIN = 8
 BACKOFF_MAX = 12
 
 BOT_TIMEOUT = 40
-HEARTBEAT_INTERVAL = 3600
-NO_JOB_ALERT_INTERVAL = 600   # 10 minutes
+HEARTBEAT_INTERVAL = 7200 # 2 Hrs
+NO_JOB_ALERT_INTERVAL = 1800   # 30 minutes
