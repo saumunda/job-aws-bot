@@ -20,34 +20,11 @@ _workers_lock = threading.Lock()
 _stop_event = threading.Event()
 
 
-def get_auth_token():
-    try:
-        session = requests.Session()
-        response = session.get(
-            JOB_PAGE_URL,
-            headers=HEADERS,
-            timeout=20,
-        )
-        response.raise_for_status()
-
-        for cookie in session.cookies:
-            if "session" in cookie.name.lower():
-                return "Bearer " + cookie.value
-    except Exception as exc:
-        print("Token error:", exc)
-
-    return None
-
-
-def fetch_jobs(auth_token):
-    payload = SEARCH_PAYLOAD
-    headers = {**HEADERS, "Authorization": auth_token}
-    headers.pop("Accept", None)
-
+def fetch_jobs():
     response = requests.post(
         GRAPHQL_URL,
-        headers=headers,
-        json=payload,
+        headers=HEADERS,
+        json=SEARCH_PAYLOAD,
         timeout=20,
     )
 
@@ -90,12 +67,7 @@ def run_once():
     save_heartbeat()
     print("Running job check:", datetime.datetime.now().isoformat(timespec="seconds"))
 
-    token = get_auth_token()
-    if not token:
-        print("Token error")
-        return
-
-    jobs = fetch_jobs(token)
+    jobs = fetch_jobs()
     if jobs:
         last_job_found = time.time()
 
