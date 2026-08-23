@@ -21,6 +21,7 @@ last_run_time = time.time()
 last_job_found = time.time()
 _workers_started = False
 _workers_lock = threading.Lock()
+_stop_event = threading.Event()
 
 
 def get_auth_token():
@@ -157,7 +158,7 @@ def run_once():
 
 
 def worker_loop():
-    while True:
+    while not _stop_event.is_set():
         try:
             run_once()
             sleep_for = random.randint(FAST_MIN, FAST_MAX)
@@ -165,7 +166,12 @@ def worker_loop():
             print("Worker error:", exc)
             sleep_for = random.randint(BACKOFF_MIN, BACKOFF_MAX)
 
-        time.sleep(sleep_for)
+        if _stop_event.wait(sleep_for):
+            break
+
+
+def stop_workers():
+    _stop_event.set()
 
 
 def start_workers():

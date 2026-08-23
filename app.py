@@ -23,7 +23,7 @@ started = False
 # =========================
 @app.route("/")
 def home():
-    return "✅ Enterprise Amazon Bot Running"
+    return "Enterprise bot running"
 
 
 @app.route("/health")

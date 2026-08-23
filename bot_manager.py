@@ -19,12 +19,14 @@ from config import *
 from cache import clear_seen_jobs
 from telegram import send
 import worker2 as worker
+import tls_worker
 from health_monitor import monitor
 
 
 _startup_lock = threading.Lock()
 _started = False
 _process_lock_file = None
+_stop_event = threading.Event()
 
 
 def _acquire_process_lock():
@@ -34,7 +36,7 @@ def _acquire_process_lock():
     """
     global _process_lock_file
 
-    lock_path = os.path.join(tempfile.gettempdir(), "amazon-job-bot.lock")
+    lock_path = os.path.join(tempfile.gettempdir(), "job-bot-amazon.lock")
     lock_file = open(lock_path, "w")
 
     try:
@@ -55,35 +57,67 @@ def _acquire_process_lock():
 # =====================================================
 
 def heartbeat():
-    while True:
+    while not _stop_event.is_set():
         clear_seen_jobs()
         send(
             f"✅ *BOT LIVE*\n"
             f"⏰ {datetime.datetime.now().strftime('%H:%M:%S')}"
         )
-        time.sleep(HEARTBEAT_INTERVAL)
+        if _stop_event.wait(HEARTBEAT_INTERVAL):
+            break
 
 
 def no_job_alert():
-    while True:
+    while not _stop_event.is_set():
         idle = time.time() - worker.last_job_found
 
         if idle > NO_JOB_ALERT_INTERVAL:
             send("📭 No jobs available right now.")
-            time.sleep(NO_JOB_ALERT_INTERVAL)
+            if _stop_event.wait(NO_JOB_ALERT_INTERVAL):
+                break
         else:
-            time.sleep(60)
+            if _stop_event.wait(60):
+                break
 
 
 def watchdog():
-    while True:
+    while not _stop_event.is_set():
         idle = time.time() - worker.last_run_time
 
         if idle > BOT_TIMEOUT:
             send("🚨 Bot frozen → restarting workers")
             worker.start_workers()
 
-        time.sleep(15)
+        if _stop_event.wait(15):
+            break
+
+
+def _seconds_until_target(time_str):
+    now = datetime.datetime.now()
+    target_time = datetime.datetime.strptime(time_str, "%H:%M").time()
+    target = datetime.datetime.combine(now.date(), target_time)
+    if target <= now:
+        target += datetime.timedelta(days=1)
+    return (target - now).total_seconds()
+
+
+def stop_bot():
+    send(MAINTENANCE_MESSAGE)
+    worker.stop_workers()
+    tls_worker.stop_workers()
+    _stop_event.set()
+
+
+def maintenance_scheduler():
+    if not MAINTENANCE_ENABLED:
+        return
+
+    delay = _seconds_until_target(MAINTENANCE_TIME)
+    time.sleep(delay)
+    if _stop_event.is_set():
+        return
+
+    stop_bot()
 
 
 # =====================================================
@@ -104,7 +138,9 @@ def start_enterprise_bot():
         _started = True
 
     # start workers
-    worker.start_workers()
+    if AMAZON_ENABLED:
+        worker.start_workers()
+    tls_worker.start_workers()
 
     # start health monitor
     threading.Thread(
@@ -127,6 +163,13 @@ def start_enterprise_bot():
         name="Watchdog"
     ).start()
 
+    # schedule maintenance stop at configured time
+    threading.Thread(
+        target=maintenance_scheduler,
+        daemon=True,
+        name="MaintenanceScheduler"
+    ).start()
+
 
 # =====================================================
 # EC2 ENTRYPOINT
@@ -135,9 +178,9 @@ def start_enterprise_bot():
 def main():
     start_enterprise_bot()
 
-    # keep service alive (systemd requirement)
-    while True:
-        time.sleep(7200)
+    # keep service alive until maintenance stop triggers
+    while not _stop_event.wait(3600):
+        pass
 
 
 if __name__ == "__main__":
