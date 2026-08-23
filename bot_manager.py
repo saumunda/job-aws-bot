@@ -19,7 +19,6 @@ from config import *
 from cache import clear_seen_jobs
 from telegram import send
 import worker2 as worker
-import tls_worker
 from health_monitor import monitor
 
 
@@ -104,7 +103,6 @@ def _seconds_until_target(time_str):
 def stop_bot():
     send(MAINTENANCE_MESSAGE)
     worker.stop_workers()
-    tls_worker.stop_workers()
     _stop_event.set()
 
 
@@ -140,7 +138,6 @@ def start_enterprise_bot():
     # start workers
     if AMAZON_ENABLED:
         worker.start_workers()
-    tls_worker.start_workers()
 
     # start health monitor
     threading.Thread(

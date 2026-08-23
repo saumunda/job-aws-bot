@@ -11,16 +11,11 @@ from config import (
     BACKOFF_MIN,
     FAST_MAX,
     FAST_MIN,
-    GRAPHQL_URL,
     PRIORITY_CITIES,
 )
+from data import GRAPHQL_URL, HEADERS, JOB_PAGE_URL, SEARCH_PAYLOAD
 from telegram import send
 
-
-JOB_PAGE_URL = (
-    "https://www.jobsatamazon.co.uk/app#/jobSearch"
-    "?query=Warehouse%20Operative&locale=en-GB"
-)
 
 WORKER_COUNT = 1
 
@@ -35,11 +30,7 @@ def get_auth_token():
         session = requests.Session()
         response = session.get(
             JOB_PAGE_URL,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                "Accept": "text/html",
-                "Referer": "https://www.jobsatamazon.co.uk/",
-            },
+            headers=HEADERS,
             timeout=20,
         )
         response.raise_for_status()
@@ -54,50 +45,8 @@ def get_auth_token():
 
 
 def fetch_jobs(auth_token):
-    payload = {
-        "operationName": "searchJobCardsByLocation",
-        "variables": {
-            "searchJobRequest": {
-                "locale": "en-GB",
-                "country": "United Kingdom",
-                "keyWords": "Warehouse Operative",
-                "equalFilters": [],
-                "containFilters": [
-                    {"key": "isPrivateSchedule", "val": ["true", "false"]}
-                ],
-                "rangeFilters": [],
-                "orFilters": [],
-                "dateFilters": [],
-                "sorters": [{"fieldName": "totalPayRateMax", "ascending": "false"}],
-                "pageSize": 20,
-                "consolidateSchedule": True,
-            }
-        },
-        "query": """
-        query searchJobCardsByLocation($searchJobRequest: SearchJobRequest!) {
-          searchJobCardsByLocation(searchJobRequest: $searchJobRequest) {
-            jobCards {
-              jobId
-              jobTitle
-              city
-              state
-              postalCode
-              jobType
-              employmentType
-              totalPayRateMax
-            }
-          }
-        }
-        """,
-    }
-
-    headers = {
-        "Authorization": auth_token,
-        "Content-Type": "application/json",
-        "Origin": "https://www.jobsatamazon.co.uk",
-        "Referer": "https://www.jobsatamazon.co.uk/",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    }
+    payload = SEARCH_PAYLOAD
+    headers = {**HEADERS, "Authorization": auth_token}
 
     response = requests.post(
         GRAPHQL_URL,
@@ -196,3 +145,7 @@ def start_workers():
             ).start()
 
         _workers_started = True
+if __name__ == "__main__":
+    start_workers()
+    while True:
+        time.sleep(60)

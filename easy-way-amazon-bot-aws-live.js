@@ -65,6 +65,7 @@ Show key:
 ```bash
 cat ~/.ssh/id_ed25519.pub
 ```
+"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICvnrtL6/fZG1rBmpWJnr3HL3l8S1TxHv5o7EWLTAuAO aws-server"
 
 Copy the entire output.
 
