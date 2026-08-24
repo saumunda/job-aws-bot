@@ -142,6 +142,7 @@ def start_enterprise_bot():
     # start health monitor
     threading.Thread(
         target=monitor,
+        args=(_stop_event,),
         daemon=True,
         name="HealthMonitor"
     ).start()
