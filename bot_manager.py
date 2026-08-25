@@ -27,6 +27,12 @@ _started = False
 _process_lock_file = None
 _stop_event = threading.Event()
 
+_FUEL_BOT_LINES = (
+    "Every alert has a little engine behind it. Help keep it scanning for the next opportunity.",
+    "Jobs move fast. A small contribution helps keep the bot awake and watching.",
+    "The next alert could change someone's week. Fuel the bot and keep the search running.",
+)
+
 
 def _acquire_process_lock():
     """
@@ -55,6 +61,15 @@ def _acquire_process_lock():
 # SERVICES
 # =====================================================
 
+def _fuel_bot_message(index):
+    line = _FUEL_BOT_LINES[index % len(_FUEL_BOT_LINES)]
+    return (
+        "*Fuel the Bot*\n\n"
+        f"{line}\n\n"
+        f"[Support the bot with Stripe]({STRIPE_PAYMENT_LINK})"
+    )
+
+
 def heartbeat():
     while not _stop_event.is_set():
         clear_seen_jobs()
@@ -62,8 +77,20 @@ def heartbeat():
             f"✅ *BOT LIVE*\n"
             f"⏰ {datetime.datetime.now().strftime('%H:%M:%S')}"
         )
+
         if _stop_event.wait(HEARTBEAT_INTERVAL):
             break
+
+
+def fuel_bot_reminder():
+    """Send the first Stripe reminder after one hour, then once per interval."""
+    reminder_index = 0
+
+    while not _stop_event.wait(FUEL_BOT_REMINDER_INTERVAL_SECONDS):
+        if _stop_event.is_set():
+            break
+        send(_fuel_bot_message(reminder_index))
+        reminder_index += 1
 
 
 def no_job_alert():
@@ -153,6 +180,14 @@ def start_enterprise_bot():
         daemon=True,
         name="Heartbeat"
     ).start()
+
+    # Delay the first Stripe message for one full interval after startup.
+    if FUEL_BOT_REMINDER_ENABLED and STRIPE_PAYMENT_LINK:
+        threading.Thread(
+            target=fuel_bot_reminder,
+            daemon=True,
+            name="FuelBotReminder"
+        ).start()
 
     # start watchdog
     threading.Thread(
