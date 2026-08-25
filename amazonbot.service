@@ -1,0 +1,14 @@
+[Unit]
+Description=Amazon Job Bot
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/job-aws-bot
+Environment="TELEGRAM_BOT_TOKEN=8214392800:AAFoZJIj6VXdoneMK2o3a3agM3vWVh8RwGY"
+Environment="TELEGRAM_CHAT_IDS=7943617436, -1002622997910"
+ExecStart=/home/ubuntu/job-aws-bot/venv/bin/gunicorn -w 2 -b 0.0.0.0:8001 wsgi:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

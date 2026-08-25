@@ -5,7 +5,7 @@ import time
 
 import requests
 
-from cache import job_seen, save_heartbeat, save_job
+from cache import reserve_job, save_heartbeat
 from config import BACKOFF_MAX, BACKOFF_MIN, FAST_MAX, FAST_MIN
 from data import GRAPHQL_URL, HEADERS, JOB_PAGE_URL, SEARCH_PAYLOAD
 from telegram import send
@@ -73,10 +73,9 @@ def run_once():
 
     for job in jobs:
         job_id = job.get("jobId")
-        if not job_id or job_seen(job_id):
+        if not job_id or not reserve_job(job_id):
             continue
 
-        save_job(job_id)
         send(format_job(job))
 
 

@@ -125,7 +125,7 @@ git clone git@github.com:USERNAME/REPO.git
 Example:
 
 ```bash
-git clone git@github.com:saurabh/amazon-job-bot.git
+git clone git@github.com:saumunda/amazon-job-bot.git
 ```
 
 ---
@@ -141,6 +141,7 @@ cd amazon-job-bot
 ## ✅ Step 8 — Setup Python Environment
 
 ```bash
+
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -319,3 +320,7 @@ git push -u origin main
 Important: do **not** push your Telegram bot token to GitHub.
 
 
+sed -i 's/\r$//' update.sh
+cat -A update.sh
+ls -la /home/ubuntu/job-aws-bot/.git
+bash update.sh
