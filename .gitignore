@@ -1,4 +1,9 @@
-venv/
-.env
+
+# Local credentials, dependencies and payment state
+.test-deps/
 __pycache__/
-*.pyc
+.env
+.env.*
+!.env.example
+*.pem
+telegram_subscription_bot/data/

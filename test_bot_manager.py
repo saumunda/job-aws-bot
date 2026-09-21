@@ -36,15 +36,15 @@ class ReminderSchedulingTests(unittest.TestCase):
 
         with (
             patch.object(bot_manager, "_stop_event", stop_event),
-            patch.object(bot_manager, "FUEL_BOT_REMINDER_INTERVAL_SECONDS", 3600),
+            patch.object(bot_manager, "FUEL_BOT_REMINDER_INTERVAL_SECONDS", 1800),
             patch.object(bot_manager, "send", lambda message: calls.append(("send", message))),
         ):
             bot_manager.fuel_bot_reminder()
 
-        self.assertEqual(calls[0], ("wait", 3600))
+        self.assertEqual(calls[0], ("wait", 2000))
         self.assertEqual(calls[1][0], "send")
         self.assertIn(bot_manager.STRIPE_PAYMENT_LINK, calls[1][1])
-        self.assertEqual(calls[2], ("wait", 3600))
+        self.assertEqual(calls[2], ("wait", 1800))
 
     def test_heartbeat_does_not_send_stripe_reminder(self):
         stop_event = FakeStopEvent(stop_after_waits=1)
