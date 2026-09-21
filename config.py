@@ -27,13 +27,7 @@ FUEL_BOT_REMINDER_INTERVAL_SECONDS = _read_reminder_interval_seconds()
 
 AMAZON_ENABLED = os.getenv("AMAZON_ENABLED", "1") == "1"
 
-PRIORITY_CITIES = [
-    "Sheffield",
-    "Rotherham",
-    "Chesterfield",
-    "Leeds",
-    "Manchester"
-]
+PRIORITY_CITIES = []
 
 FAST_MIN = 5
 FAST_MAX = 5
