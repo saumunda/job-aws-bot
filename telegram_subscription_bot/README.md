@@ -1,77 +1,75 @@
-# Telegram Subscription Bot
+# Telegram group payments with Stripe
 
-This is a standalone bot for asking new Telegram channel or group members to pay
-GBP 1.00 for a one-year subscription.
+This standalone Flask service creates a private Stripe Checkout link when someone
+requests to join your group. A verified Stripe webhook approves that exact Telegram
+user after payment. The existing default is a **one-time GBP 1.00 payment**.
 
-It listens for:
-
-- `chat_join_request`: best for private channels/groups that require approval.
-  Telegram gives the bot a temporary private `user_chat_id`, so the bot can send
-  the payment prompt directly to the requester.
-- `chat_member`: useful after a user joins. Telegram only allows a DM here if the
-  user has already started the bot.
-- `successful_payment`: records the paid subscription and optionally approves a
-  pending join request.
-
-The bot never posts the payment prompt publicly in the group/channel.
+Stripe Projects (https://docs.stripe.com/projects) provisions infrastructure. This
+integration uses Checkout Sessions (https://docs.stripe.com/api/checkout/sessions/create)
+and signed payment webhooks (https://docs.stripe.com/webhooks).
 
 ## Setup
 
-1. Create a Telegram bot with `@BotFather`.
-2. Add the bot as an admin in your channel/group.
-3. If you want the best private-payment flow, enable join requests for the invite
-   link and give the bot the `can_invite_users` admin permission.
-4. Copy `.env.example` values into your server environment.
-5. Install and run:
+1. Rotate the Telegram bot token previously stored in `.env.example` using BotFather.
+2. Use a **private group with approval-required invite links**. Revoke old direct-join
+   links and avoid manually approving unpaid users. Public groups/direct invites
+   bypass the payment gate. Give the bot administrator permission `can_invite_users`.
+3. Export the variables in `.env.example` into the service environment. The example
+   file is a template and is not loaded automatically. Use your numeric group ID.
+   `PUBLIC_BASE_URL` must be the HTTPS address of this Flask service, not a t.me URL.
+4. Obtain a Stripe test secret key (`sk_test_...`). A publishable `pk_...` key cannot
+   create Checkout Sessions. Set `STRIPE_SECRET_KEY`.
+5. Register `https://YOUR_DOMAIN/stripe/webhook` in Stripe for
+   `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+   Set its signing secret (`whsec_...`) as `STRIPE_WEBHOOK_SECRET`.
+6. Set `WEBHOOK_SECRET_TOKEN` to a separate random secret for Telegram.
+7. Install and start from this directory:
 
 ```powershell
 pip install -r requirements.txt
 python app.py
 ```
 
-## Environment
+For Linux production, run `gunicorn --workers 2 --bind 0.0.0.0:8010 wsgi:app`
+behind HTTPS. Deploy this service alongside the root job-alert application: the
+root `app.py` does not serve these payment routes. Only one Telegram webhook can
+be registered per bot; route all needed updates here or use a separate payment bot.
 
-Required:
+8. Set `WEBHOOK_URL=https://YOUR_DOMAIN/telegram/webhook`, then run
+   `python set_webhook.py` to register Telegram updates.
+9. Start the bot in Telegram, request to join using the approval-required link,
+   and complete a test Checkout. Confirm that only the paying account is approved.
+   After testing, configure the live Stripe key and live endpoint signing secret.
 
-- `TELEGRAM_BOT_TOKEN`: token from `@BotFather`
-- `CHANNEL_CHAT_ID`: your channel/group id, for example `-1001234567890`, or a
-  public username like `@mychannel`
+## Payment behavior and operations
 
-Payment options:
+- Checkout sessions are bound server-side to user ID, group ID, amount and currency.
+- Only signed events with `payment_status=paid` grant access. Redirect pages do not.
+- SQLite records payments, suppresses duplicate fulfillment, and preserves payment
+  when Telegram approval fails. A failed delivery returns HTTP 500 for Stripe retry.
+- If approval failed because a request was withdrawn, request to join again. A
+  recorded payment within its configured duration allows rejoining without payment.
+- Pending Checkout links are reused until near expiry. Unpaid/cancelled requests
+  remain pending. The bot does not automatically decline or approve them.
+- Telegram's temporary join-request DM permission lasts about five minutes and may
+  be unavailable; start the bot first and submit a fresh join request if needed.
+- `SUBSCRIPTION_DURATION_DAYS` defaults to 365 and controls paid rejoin eligibility.
+  **Automatic expiry removal, recurring billing, refunds and dispute revocation are
+  not implemented.** Group members remain until removed by an administrator.
+- Keep `PAYMENTS_DB` on persistent local storage and back it up. All workers must
+  share this database. Multiple hosts require a shared transactional database.
+- Stripe mode disables generic public payment reminders and post-join payment
+  prompts. An approval must not generate another charge prompt.
+- With no `STRIPE_SECRET_KEY`, the legacy `PAYMENT_LINK` flow remains available;
+  payments in that mode require manual verification and approval.
 
-- Set `TELEGRAM_PROVIDER_TOKEN` to send a Telegram invoice for GBP 1.00.
-- Or set `PAYMENT_LINK` to send a private payment-link button.
-
-Optional:
-
-- `WEBHOOK_SECRET_TOKEN`: Telegram webhook secret header.
-- `APPROVE_JOIN_REQUESTS_AFTER_PAYMENT`: defaults to `1`.
-- `SUBSCRIPTION_PRICE_PENCE`: defaults to `100`.
-- `SUBSCRIPTION_DURATION_DAYS`: defaults to `365`.
-- `SUBSCRIPTION_DATA_FILE`: defaults to `data/subscribers.json`.
-
-## Webhook
-
-Expose this app over HTTPS, then set the webhook:
+## Verification
 
 ```powershell
-$body = @{
-  url = "https://YOUR_DOMAIN/telegram/webhook"
-  secret_token = $env:WEBHOOK_SECRET_TOKEN
-  allowed_updates = @("chat_join_request", "chat_member", "message", "pre_checkout_query")
-  drop_pending_updates = $true
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "https://api.telegram.org/bot$env:TELEGRAM_BOT_TOKEN/setWebhook" `
-  -ContentType "application/json" `
-  -Body $body
+python -m unittest discover -p "test_*.py"
 ```
 
-## Important Telegram Limit
-
-For `chat_member` join events, Telegram blocks bots from starting a new private
-DM unless the member has already opened the bot and pressed Start. For
-`chat_join_request`, Telegram provides `user_chat_id`, which lets the bot message
-the requester privately for a short window while the request is pending.
+Tests mock external API calls and use genuine Stripe webhook signatures. They cover
+identity/amount checks, delayed payments, duplicate events, approval retries,
+paid rejoining, and signature rejection. Live Stripe/Telegram testing is still
+required with your credentials and deployed HTTPS address.

@@ -1,8 +1,8 @@
 import json
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
-from config import SUBSCRIPTION_DATA_FILE, SUBSCRIPTION_DURATION_DAYS
+from config import SUBSCRIPTION_DATA_FILE
 
 
 _lock = threading.Lock()
@@ -92,27 +92,6 @@ def record_join_request(user, chat, private_chat_id):
                 "pending_join_chat_title": chat.get("title"),
                 "private_chat_id": private_chat_id,
                 "join_requested_at": _iso(_now()),
-            }
-        )
-        _save(data)
-        return record
-
-
-def record_paid(user_id, payment):
-    paid_until = _now() + timedelta(days=SUBSCRIPTION_DURATION_DAYS)
-
-    with _lock:
-        data = _load()
-        record = _user_record(data, user_id)
-        record.update(
-            {
-                "paid": True,
-                "paid_at": _iso(_now()),
-                "paid_until": _iso(paid_until),
-                "payment_currency": payment.get("currency"),
-                "payment_total_amount": payment.get("total_amount"),
-                "telegram_payment_charge_id": payment.get("telegram_payment_charge_id"),
-                "provider_payment_charge_id": payment.get("provider_payment_charge_id"),
             }
         )
         _save(data)

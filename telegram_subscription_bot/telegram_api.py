@@ -47,39 +47,6 @@ def send_message(chat_id, text, reply_markup=None):
     return _post("sendMessage", payload)
 
 
-def send_invoice(chat_id, user_id):
-    return _post(
-        "sendInvoice",
-        {
-            "chat_id": chat_id,
-            "title": config.SUBSCRIPTION_TITLE[:32],
-            "description": config.SUBSCRIPTION_DESCRIPTION[:255],
-            "payload": f"year_subscription:{user_id}",
-            "provider_token": config.TELEGRAM_PROVIDER_TOKEN,
-            "currency": config.SUBSCRIPTION_CURRENCY,
-            "prices": [
-                {
-                    "label": config.SUBSCRIPTION_TITLE[:32],
-                    "amount": config.SUBSCRIPTION_PRICE_PENCE,
-                }
-            ],
-            "start_parameter": "year-subscription",
-        },
-    )
-
-
-def answer_pre_checkout_query(query_id, ok=True, error_message=None):
-    payload = {"pre_checkout_query_id": query_id, "ok": ok}
-    if error_message:
-        payload["error_message"] = error_message
-
-    return _post("answerPreCheckoutQuery", payload)
-
-
-def approve_chat_join_request(chat_id, user_id):
-    return _post("approveChatJoinRequest", {"chat_id": chat_id, "user_id": user_id})
-
-
 def answer_chat_join_request_query(query_id, result="queue"):
     return _post(
         "answerChatJoinRequestQuery",
@@ -87,16 +54,26 @@ def answer_chat_join_request_query(query_id, result="queue"):
     )
 
 
-def payment_link_keyboard():
-    if not config.PAYMENT_LINK:
+def approve_chat_join_request(chat_id, user_id):
+    return _post("approveChatJoinRequest", {"chat_id": chat_id, "user_id": user_id})
+
+
+def get_chat_member(chat_id, user_id):
+    return _post("getChatMember", {"chat_id": chat_id, "user_id": user_id})
+
+
+def payment_link_keyboard(url=None):
+    url = url or config.PAYMENT_LINK
+    if not url:
         return None
 
+    amount = config.SUBSCRIPTION_PRICE_PENCE / 100
     return {
         "inline_keyboard": [
             [
                 {
-                    "text": f"Pay {config.SUBSCRIPTION_CURRENCY} {config.SUBSCRIPTION_PRICE_PENCE / 100:.2f}",
-                    "url": config.PAYMENT_LINK,
+                    "text": f"Pay {config.SUBSCRIPTION_CURRENCY} {amount:.2f}",
+                    "url": url,
                 }
             ]
         ]

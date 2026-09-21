@@ -9,7 +9,6 @@ ALLOWED_UPDATES = [
     "chat_join_request",
     "chat_member",
     "message",
-    "pre_checkout_query",
 ]
 
 
