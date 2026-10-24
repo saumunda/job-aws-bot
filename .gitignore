@@ -1,0 +1,9 @@
+
+# Local credentials, dependencies and payment state
+.test-deps/
+__pycache__/
+.env
+.env.*
+!.env.example
+*.pem
+telegram_subscription_bot/data/

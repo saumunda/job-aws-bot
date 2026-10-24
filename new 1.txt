@@ -1,0 +1,1 @@
+ssh -i "C:\Users\Saurabh Bhola\OneDrive\Desktop\job-aws-bot-main\amazonobs.pem" ubuntu@ip-172-31-15-226

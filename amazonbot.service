@@ -1,0 +1,14 @@
+[Unit]
+Description=Amazon Job Bot
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/job-aws-bot
+EnvironmentFile=/etc/job-aws-bot/amazonbot.env
+Environment="JOB_SEARCH_INTERVAL_SECONDS=5"
+ExecStart=/home/ubuntu/job-aws-bot/venv/bin/gunicorn -w 2 -b 0.0.0.0:8001 wsgi:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

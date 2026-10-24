@@ -1,0 +1,6 @@
+flask
+gunicorn
+playwright
+redis
+requests
+python-dotenv>=1.0,<2
