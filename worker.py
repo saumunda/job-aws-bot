@@ -1,5 +1,4 @@
 import datetime
-import random
 import threading
 import time
 
@@ -7,10 +6,7 @@ import requests
 
 from cache import reserve_job, save_heartbeat
 from config import (
-    BACKOFF_MAX,
-    BACKOFF_MIN,
-    FAST_MAX,
-    FAST_MIN,
+    JOB_SEARCH_INTERVAL_SECONDS,
     PRIORITY_CITIES,
 )
 from data import GRAPHQL_URL, HEADERS, JOB_PAGE_URL, SEARCH_PAYLOAD
@@ -94,12 +90,10 @@ def worker_loop():
     while True:
         try:
             run_once()
-            sleep_for = random.randint(FAST_MIN, FAST_MAX)
         except Exception as exc:
             print("Worker error:", exc)
-            sleep_for = random.randint(BACKOFF_MIN, BACKOFF_MAX)
 
-        time.sleep(sleep_for)
+        time.sleep(JOB_SEARCH_INTERVAL_SECONDS)
 
 
 def start_workers():

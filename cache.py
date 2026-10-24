@@ -25,7 +25,7 @@ r = (
     )
 )
 
-SEEN_JOB_TTL_SECONDS = int(os.getenv("SEEN_JOB_TTL_SECONDS", "3600"))
+SEEN_JOB_TTL_SECONDS = int(os.getenv("SEEN_JOB_TTL_SECONDS", "1800"))
 _seen_jobs = {}
 _seen_jobs_lock = threading.Lock()
 _heartbeat_expires_at = 0

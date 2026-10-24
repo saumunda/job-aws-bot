@@ -1,5 +1,4 @@
 import time
-from telegram import send
 from cache import is_alive
 
 def monitor(stop_event=None):
@@ -9,7 +8,7 @@ def monitor(stop_event=None):
         if is_alive():
             offline_alert_sent = False
         elif not offline_alert_sent:
-            send("🚨 BOT OFFLINE DETECTED")
+            print("Bot offline detected")
             offline_alert_sent = True
 
         if stop_event is None:

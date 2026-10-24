@@ -1,12 +1,11 @@
 import datetime
-import random
 import threading
 import time
 
 import requests
 
 from cache import reserve_job, save_heartbeat
-from config import BACKOFF_MAX, BACKOFF_MIN, FAST_MAX, FAST_MIN
+from config import JOB_SEARCH_INTERVAL_SECONDS
 from data import GRAPHQL_URL, HEADERS, JOB_PAGE_URL, SEARCH_PAYLOAD
 from telegram import send
 
@@ -83,12 +82,10 @@ def worker_loop():
     while not _stop_event.is_set():
         try:
             run_once()
-            sleep_for = random.randint(FAST_MIN, FAST_MAX)
         except Exception as exc:
             print("Worker error:", exc)
-            sleep_for = random.randint(BACKOFF_MIN, BACKOFF_MAX)
 
-        if _stop_event.wait(sleep_for):
+        if _stop_event.wait(JOB_SEARCH_INTERVAL_SECONDS):
             break
 
 

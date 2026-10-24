@@ -17,7 +17,6 @@ else:
 
 from config import *
 from cache import clear_seen_jobs
-from telegram import send
 import worker2 as worker
 from health_monitor import monitor
 
@@ -26,13 +25,6 @@ _startup_lock = threading.Lock()
 _started = False
 _process_lock_file = None
 _stop_event = threading.Event()
-
-_FUEL_BOT_LINES = (
-    "Every alert has a little engine behind it. Help keep it scanning for the next opportunity.",
-    "Jobs move fast. A small contribution helps keep the bot awake and watching.",
-    "The next alert could change someone's week. Fuel the bot and keep the search running.",
-)
-
 
 def _acquire_process_lock():
     """
@@ -60,50 +52,9 @@ def _acquire_process_lock():
 # =====================================================
 # SERVICES
 # =====================================================
-
-def _fuel_bot_message(index):
-    line = _FUEL_BOT_LINES[index % len(_FUEL_BOT_LINES)]
-    return (
-        "*Fuel the Bot*\n\n"
-        f"{line}\n\n"
-        f"[Support the bot with Stripe]({STRIPE_PAYMENT_LINK})"
-    )
-
-
 def heartbeat():
-    while not _stop_event.is_set():
+    while not _stop_event.wait(HEARTBEAT_INTERVAL):
         clear_seen_jobs()
-        send(
-            f"✅ *BOT LIVE*\n"
-            f"⏰ {datetime.datetime.now().strftime('%H:%M:%S')}"
-        )
-
-        if _stop_event.wait(HEARTBEAT_INTERVAL):
-            break
-
-
-def fuel_bot_reminder():
-    """Send the first Stripe reminder after one hour, then once per interval."""
-    reminder_index = 0
-
-    while not _stop_event.wait(FUEL_BOT_REMINDER_INTERVAL_SECONDS):
-        if _stop_event.is_set():
-            break
-        send(_fuel_bot_message(reminder_index))
-        reminder_index += 1
-
-
-def no_job_alert():
-    while not _stop_event.is_set():
-        idle = time.time() - worker.last_job_found
-
-        if idle > NO_JOB_ALERT_INTERVAL:
-            send("📭 No jobs available right now.")
-            if _stop_event.wait(NO_JOB_ALERT_INTERVAL):
-                break
-        else:
-            if _stop_event.wait(60):
-                break
 
 
 def watchdog():
@@ -111,7 +62,6 @@ def watchdog():
         idle = time.time() - worker.last_run_time
 
         if idle > BOT_TIMEOUT:
-            send("🚨 Bot frozen → restarting workers")
             worker.start_workers()
 
         if _stop_event.wait(15):
@@ -128,7 +78,6 @@ def _seconds_until_target(time_str):
 
 
 def stop_bot():
-    send(MAINTENANCE_MESSAGE)
     worker.stop_workers()
     _stop_event.set()
 
@@ -166,7 +115,7 @@ def start_enterprise_bot():
     if AMAZON_ENABLED:
         worker.start_workers()
 
-    # start health monitor
+    # Monitor health locally without sending non-job Telegram messages.
     threading.Thread(
         target=monitor,
         args=(_stop_event,),
@@ -174,20 +123,12 @@ def start_enterprise_bot():
         name="HealthMonitor"
     ).start()
 
-    # start heartbeat service
+    # Clear all seen jobs together once per hour without posting a status message.
     threading.Thread(
         target=heartbeat,
         daemon=True,
         name="Heartbeat"
     ).start()
-
-    # Delay the first Stripe message for one full interval after startup.
-    if FUEL_BOT_REMINDER_ENABLED and STRIPE_PAYMENT_LINK:
-        threading.Thread(
-            target=fuel_bot_reminder,
-            daemon=True,
-            name="FuelBotReminder"
-        ).start()
 
     # start watchdog
     threading.Thread(

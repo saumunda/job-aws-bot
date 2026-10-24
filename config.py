@@ -1,42 +1,28 @@
 import os
 
+from dotenv import load_dotenv
 
-def _read_reminder_interval_seconds():
-    setting = "FUEL_BOT_REMINDER_INTERVAL_SECONDS"
-    raw_value = os.getenv(setting, "2000")
 
-    try:
-        interval = int(raw_value)
-    except ValueError as exc:
-        raise RuntimeError(f"{setting} must be an integer") from exc
-
-    if interval < 60:
-        raise RuntimeError(f"{setting} must be at least 60")
-
-    return interval
-
+load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_IDS = [c.strip() for c in os.getenv("TELEGRAM_CHAT_IDS", "").split(",") if c.strip()]
-STRIPE_PAYMENT_LINK = os.getenv(
-    "STRIPE_PAYMENT_LINK",
-    "https://buy.stripe.com/fZucN5cFx2Vodbo6sHdMI01",
-).strip()
-FUEL_BOT_REMINDER_ENABLED = os.getenv("FUEL_BOT_REMINDER_ENABLED", "1") == "1"
-FUEL_BOT_REMINDER_INTERVAL_SECONDS = _read_reminder_interval_seconds()
 
 AMAZON_ENABLED = os.getenv("AMAZON_ENABLED", "1") == "1"
+JOB_SEARCH_INTERVAL_SECONDS = int(os.getenv("JOB_SEARCH_INTERVAL_SECONDS", "5"))
+if JOB_SEARCH_INTERVAL_SECONDS < 1:
+    raise RuntimeError("JOB_SEARCH_INTERVAL_SECONDS must be at least 1")
 
-PRIORITY_CITIES = []
-
-FAST_MIN = 5
-FAST_MAX = 5
-BACKOFF_MIN = 8
-BACKOFF_MAX = 12
+PRIORITY_CITIES = [
+    "Sheffield",
+    "Rotherham",
+    "Chesterfield",
+    "Leeds",
+    "Manchester"
+]
 
 BOT_TIMEOUT = 40
-HEARTBEAT_INTERVAL = 2400
-NO_JOB_ALERT_INTERVAL = 300   # 10 minutes
+HEARTBEAT_INTERVAL = 3600
 
 MAINTENANCE_ENABLED = os.getenv("MAINTENANCE_ENABLED", "0") == "1"
 MAINTENANCE_TIME = os.getenv("MAINTENANCE_TIME", "00:00")
